@@ -8,6 +8,9 @@ from telegram.ext import ApplicationBuilder, ContextTypes, MessageHandler, filte
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
+# Trage hier deine persönliche Telegram-ID als Zahl ein (z. B. 123456789)
+ADMIN_CHAT_ID = 1536340598  # <--- HIER DEINE ID EINTRAGEN
+
 SYSTEM_PROMPT = """
 Du bist ein erfahrener, absolut vertrauenswürdiger Meister im Heizungsbau und Top-Fachberater für Wärmepumpen mit über 15 Jahren Praxiserfahrung in Deutschland.
 
