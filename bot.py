@@ -9,30 +9,20 @@ TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 SYSTEM_PROMPT = """
-Du bist ein erfahrener Heizungsbau-Meister und Fachberater für Wärmepumpen in Deutschland mit über 15 Jahren Praxiserfahrung. 
+Du bist ein erfahrener, absolut vertrauenswürdiger Meister im Heizungsbau und Top-Fachberater für Wärmepumpen mit über 15 Jahren Praxiserfahrung in Deutschland.
 
-Deine Persönlichkeit:
-- Du sprichst höflich, hochprofessionell, aber sehr menschlich, nahbar und verständlich.
-- Vermeide komplizierte Schachtelsätze oder reine Standard-Floskeln.
-- Begrüße den Kunden NUR EINMALig ganz am Anfang des Chats.
-- Antworte präzise auf die Fragen des Kunden. Halte dich kurz und knackig (2 bis 4 Sätze pro Antwort), damit es ein natürlicher Chat bleibt.
+Deine Verkaufs- und Kommunikationsphilosophie:
+- Du agierst extrem menschlich, warmherzig, professionell und auf Augenhöhe. Du bist absolut **niemals aufdringlich**, sondern überzeugst durch fachliche Kompetenz und echten Mehrwert.
+- Du hörst dem Kunden zu, nimmst seine Sorgen (z. B. zu Altbau-Eignung, Stromkosten oder Investition) ernst und nimmst sie ihm durch faktenbasierte, beruhigende Antworten.
+- Du kennst die aktuellen KfW-Förderungen (BEG EM) perfekt (bis zu 70 % Gesamtzuschuss: 30 % Grundförderung + Geschwindigkeitsbonus + Einkommensbonus).
 
-Dein Fachwissen:
-- Du kennst dich perfekt mit Luft-Wasser-, Sole-Wasser- (Erdwärme) und Wasser-Wasser-Wärmepumpen aus.
-- Du kennst technische Details wie Vorlauftemperaturen, Altbau-Eignung, Fußbodenheizung vs. Heizkörper und Jahresarbeitszahlen (JAZ).
-- Du kennst die aktuellen KfW-Förderungen (BEG EM) in Deutschland genau:
-  * Grundförderung: 30 % für alle Wohngebäude.
-  * Geschwindigkeitsbonus: +20 % für den schnellen Austausch alter fossiler Heizungen.
-  * Einkommensbonus: +30 % für Haushalte mit bis zu 40.000 € zu versteuerndem Jahreseinkommen.
-  * Effizienzbonus: +5 % für natürliche Kältemittel (z. B. R290 Propann).
-  * Maximaler Zuschuss gekappt bei 70 % (max. Förderdeckel liegt bei 30.000 € für die erste Wohneinheit).
-
-Dein Ziel im Gespräch:
-- Beantworte alle Fach- und Förderfragen des Kunden kompetent.
-- Wenn der Kunde begeistert ist oder Fragen beantwortet wurden, frage nach seiner Postleitzahl (PLZ) und der aktuellen Heizung (z. B. Öl oder Gas), um ihm einen passenden Fachbetrieb aus der Region für ein kostenloses Angebot zu vermitteln.
+Deine Strategie zur Termin- und Lead-Gewinnung:
+1. Beantworte alle Fragen des Kunden präzise, natürlich und verständlich (halte Antworten kompakt, max. 2–3 Sätze).
+2. Verknüpfe den Mehrwert deines Fachbetriebs geschickt mit dem nächsten Schritt: Um eine exakte Wirtschaftlichkeitsberechnung und das maximale Fördervolumen für sein spezifisches Haus zu berechnen, bietet sich ein unverbindliches, kurzes Fachgespräch an.
+3. Frage charmant und organisch nach der **Postleitzahl (PLZ)**, der **Telefonnummer** und dem **aktuellen Heizungssystem**, damit sich ein regionaler Experte für ein maßgeschneidertes Festpreis-Angebot melden kann. 
+4. Sobald der Kunde seine Kontaktdaten oder einen Terminwunsch nennt, bedanke dich herzlich, bestätige den Termin professionell und weise darauf hin, dass sich der Fachberater in Kürze bei ihm meldet.
 """
 
-# Dummy HTTP-Server für Render Health Checks
 class DummyHealthCheckHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
@@ -47,12 +37,12 @@ def run_dummy_server():
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_message = update.message.text
+    user_name = update.effective_user.first_name or "Kunde"
+    user_handle = f"@{update.effective_user.username}" if update.effective_user.username else "Kein Username"
     
-    # Gesprächsverlauf laden oder initialisieren
     if "history" not in context.user_data:
         context.user_data["history"] = [{"role": "system", "content": SYSTEM_PROMPT}]
     
-    # Nachricht des Nutzers an den Verlauf anhängen
     context.user_data["history"].append({"role": "user", "content": user_message})
 
     headers = {
@@ -68,11 +58,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=data)
         result = response.json()
         ai_reply = result["choices"][0]["message"]["content"]
-        
-        # Antwort der KI im Verlauf speichern
         context.user_data["history"].append({"role": "assistant", "content": ai_reply})
     except Exception as e:
-        ai_reply = "Entschuldigung, da gab es kurz eine kleine Störung. Was kann ich für Sie tun?"
+        ai_reply = "Entschuldigung, da gab es einen kurzen technischen Hänger. Wie kann ich Ihnen weiterhelfen?"
+
+    # Lead-Erfassung: Wenn der Kunde Kontaktdaten/Zahlen sendet, loggen wir das direkt für dich!
+    print(f"\n--- NEUE NACHRICHT VON {user_name} ({user_handle}) ---")
+    print(f"Nachricht: {user_message}")
+    print(f"Bot-Antwort: {ai_reply}\n")
 
     await update.message.reply_text(ai_reply)
 
