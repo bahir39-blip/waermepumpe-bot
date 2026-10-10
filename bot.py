@@ -72,6 +72,19 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(ai_reply)
 
+    # Automatische Benachrichtigung an dich, wenn der Kunde Kontaktdaten/Zahlen sendet
+    if any(char.isdigit() for char in user_message) and len(user_message) >= 5:
+        lead_notification = (
+            f"🚨 NEUER WÄRMEPUMPEN-LEAD!\n\n"
+            f"👤 Name: {user_name} ({user_handle})\n"
+            f"💬 Letzte Nachricht des Kunden: {user_message}\n\n"
+            f"Der Bot hat die Kontaktdaten/Daten erfasst."
+        )
+        try:
+            await context.bot.send_message(chat_id=ADMIN_CHAT_ID, text=lead_notification)
+        except Exception as e:
+            print(f"Fehler beim Senden der Admin-Benachrichtigung: {e}")
+
 if __name__ == "__main__":
     threading.Thread(target=run_dummy_server, daemon=True).start()
     app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
